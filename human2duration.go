@@ -96,14 +96,14 @@ func ParseDuration(input string) (time.Duration, error) {
 		return d, nil
 	}
 
-	// Native Go format
-	if d, err := time.ParseDuration(input); err == nil {
-		return d, nil
-	}
-
 	// Timestamp input (RFC3339, etc.)
 	if ts, err := tryParseTimestamp(input); err == nil {
 		return time.Until(ts), nil
+	}
+
+	// Native Go format
+	if d, err := time.ParseDuration(input); err == nil {
+		return d, nil
 	}
 
 	// General unit pattern: "2d 3h"
