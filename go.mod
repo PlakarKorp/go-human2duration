@@ -1,3 +1,3 @@
 module github.com/PlakarKorp/go-human2duration
 
-go 1.23.4
+go 1.23.3
