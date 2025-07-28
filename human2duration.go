@@ -55,12 +55,23 @@ var (
 	unitRegex = regexp.MustCompile(`(?i)([\d.]+)\s*([a-z]+)`)
 )
 
-func ParseSinceDuration(input string) (time.Duration, error) {
-	input = strings.ToLower(strings.TrimSpace(input))
-
-	if strings.HasSuffix(input, " ago") {
-		input = strings.TrimSpace(strings.TrimSuffix(input, " ago"))
+func stripPrefixIgnoreCase(s, prefix string) string {
+	if strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix)) {
+		return s[len(prefix):]
 	}
+	return s
+}
+
+func stripSuffixIgnoreCase(s, suffix string) string {
+	if strings.HasSuffix(strings.ToLower(s), strings.ToLower(suffix)) {
+		return s[:len(s)-len(suffix)]
+	}
+	return s
+}
+
+func ParseSinceDuration(input string) (time.Duration, error) {
+	input = strings.TrimSpace(input)
+	input = stripSuffixIgnoreCase(input, " ago")
 
 	duration, err := ParseDuration(input)
 	if err != nil {
@@ -71,14 +82,9 @@ func ParseSinceDuration(input string) (time.Duration, error) {
 }
 
 func ParseAfterDuration(input string) (time.Duration, error) {
-	input = strings.ToLower(strings.TrimSpace(input))
-
-	if strings.HasPrefix(input, "in ") {
-		input = strings.TrimSpace(strings.TrimPrefix(input, "in "))
-	}
-	if strings.HasPrefix(input, "after ") {
-		input = strings.TrimSpace(strings.TrimPrefix(input, "after "))
-	}
+	input = strings.TrimSpace(input)
+	input = stripPrefixIgnoreCase(input, "in ")
+	input = stripPrefixIgnoreCase(input, "after ")
 
 	duration, err := ParseDuration(input)
 	if err != nil {
@@ -89,16 +95,19 @@ func ParseAfterDuration(input string) (time.Duration, error) {
 }
 
 func ParseDuration(input string) (time.Duration, error) {
-	input = strings.ToLower(strings.TrimSpace(input))
-
-	// Fuzzy match
-	if d, ok := fuzzyMap[input]; ok {
-		return d, nil
-	}
+	input = strings.TrimSpace(input)
 
 	// Timestamp input (RFC3339, etc.)
 	if ts, err := tryParseTimestamp(input); err == nil {
 		return time.Until(ts), nil
+	}
+
+	// normalize input
+	input = strings.ToLower(input)
+
+	// Fuzzy match
+	if d, ok := fuzzyMap[input]; ok {
+		return d, nil
 	}
 
 	// Native Go format
@@ -130,6 +139,7 @@ func ParseDuration(input string) (time.Duration, error) {
 }
 
 func tryParseTimestamp(s string) (time.Time, error) {
+	s = strings.ToUpper(s)
 	layouts := []string{
 		time.RFC3339,
 		"2006-01-02 15:04",
@@ -137,6 +147,7 @@ func tryParseTimestamp(s string) (time.Time, error) {
 		"2006-01-02",
 		"2006/01/02",
 	}
+
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, s); err == nil {
 			return t, nil
