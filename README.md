@@ -32,7 +32,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/yourusername/human2duration"
+    "github.com/PlakarKorp/go-human2duration"
 )
 
 func main() {
