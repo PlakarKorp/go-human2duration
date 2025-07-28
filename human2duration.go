@@ -135,6 +135,7 @@ func tryParseTimestamp(s string) (time.Time, error) {
 		"2006-01-02 15:04",
 		"2006-01-02 15:04:05",
 		"2006-01-02",
+		"2006/01/02",
 	}
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, s); err == nil {
