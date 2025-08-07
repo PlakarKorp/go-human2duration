@@ -14,7 +14,7 @@ var unitMap = map[string]time.Duration{
 	"sec":     time.Second,
 	"second":  time.Second,
 	"seconds": time.Second,
-	"m":       time.Minute,
+	"mi":      time.Minute,
 	"min":     time.Minute,
 	"minute":  time.Minute,
 	"minutes": time.Minute,
@@ -28,6 +28,7 @@ var unitMap = map[string]time.Duration{
 	"w":       7 * 24 * time.Hour,
 	"week":    7 * 24 * time.Hour,
 	"weeks":   7 * 24 * time.Hour,
+	"m":       30 * 24 * time.Hour,
 	"mo":      30 * 24 * time.Hour,
 	"month":   30 * 24 * time.Hour,
 	"months":  30 * 24 * time.Hour,
@@ -40,19 +41,19 @@ var fuzzyMap = map[string]time.Duration{
 	"half an hour":       30 * time.Minute,
 	"an hour and a half": 90 * time.Minute,
 	"half a day":         12 * time.Hour,
-	"couple of minutes":  2 * time.Minute,
-	"couple of hours":    2 * time.Hour,
-	"couple of days":     48 * time.Hour,
-	"an hour":            time.Hour,
-	"a minute":           time.Minute,
-	"a second":           time.Second,
-	"a day":              24 * time.Hour,
-	"a week":             7 * 24 * time.Hour,
-	"a month":            30 * 24 * time.Hour,
+
+	"a second": time.Second,
+	"a minute": time.Minute,
+	"an hour":  time.Hour,
+	"a day":    24 * time.Hour,
+	"a week":   7 * 24 * time.Hour,
+	"a month":  30 * 24 * time.Hour,
+	"a year":   365 * 24 * time.Hour,
 }
 
 var (
-	unitRegex = regexp.MustCompile(`(?i)([\d.]+)\s*([a-z]+)`)
+	unitRegex             = regexp.MustCompile(`(?i)([\d.]+)\s*([a-z]+)`)
+	goStyleCompactPattern = regexp.MustCompile(`^(?:\d+\s*h\s*\d+\s*m(?:\s*\d+\s*s)?|\d+\s*m\s*\d+\s*s|\d+\s*h\s*\d+\s*m?$)$`)
 )
 
 func stripPrefixIgnoreCase(s, prefix string) string {
@@ -110,9 +111,11 @@ func ParseDuration(input string) (time.Duration, error) {
 		return d, nil
 	}
 
-	// Native Go format
-	if d, err := time.ParseDuration(input); err == nil {
-		return d, nil
+	// Go compact format like "1h30m", "2m30s", etc.
+	if goStyleCompactPattern.MatchString(strings.ReplaceAll(input, " ", "")) {
+		if d, err := time.ParseDuration(strings.ReplaceAll(input, " ", "")); err == nil {
+			return d, nil
+		}
 	}
 
 	// General unit pattern: "2d 3h"
@@ -122,17 +125,29 @@ func ParseDuration(input string) (time.Duration, error) {
 	}
 
 	total := time.Duration(0)
+	previousUnit := ""
 	for _, match := range matches {
 		valStr, unit := match[1], match[2]
 		val, err := strconv.ParseFloat(valStr, 64)
 		if err != nil {
 			return 0, fmt.Errorf("invalid number: %s", valStr)
 		}
+
+		// Special disambiguation: if unit is "m", contextually decide
+		if unit == "m" {
+			if previousUnit == "h" || previousUnit == "hr" || previousUnit == "hour" || previousUnit == "hours" {
+				unit = "min"
+			} else {
+				unit = "month"
+			}
+		}
+
 		durUnit, ok := unitMap[unit]
 		if !ok {
 			return 0, fmt.Errorf("unknown unit: %s", unit)
 		}
 		total += time.Duration(val * float64(durUnit))
+		previousUnit = unit
 	}
 
 	return total, nil

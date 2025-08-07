@@ -13,19 +13,17 @@ var tests = []struct {
 	{"half an hour", 30 * time.Minute},
 	{"an hour and a half", 90 * time.Minute},
 	{"half a day", 12 * time.Hour},
-	{"couple of minutes", 2 * time.Minute},
-	{"couple of hours", 2 * time.Hour},
-	{"couple of days", 48 * time.Hour},
 	{"an hour", time.Hour},
 	{"a minute", time.Minute},
 	{"a second", time.Second},
 	{"a day", 24 * time.Hour},
 	{"a week", 7 * 24 * time.Hour},
 	{"a month", 30 * 24 * time.Hour},
+	{"a year", 365 * 24 * time.Hour},
 
 	// Standard units
 	{"1s", time.Second},
-	{"2m", 2 * time.Minute},
+	{"2mi", 2 * time.Minute},
 	{"3h", 3 * time.Hour},
 	{"4d", 96 * time.Hour},
 	{"5w", 5 * 7 * 24 * time.Hour},
@@ -48,8 +46,11 @@ var tests = []struct {
 	{"1d 12h", 36 * time.Hour},
 
 	// Native duration fallback
-	{"90m", 90 * time.Minute},
+	{"90m", 90 * 30 * 24 * time.Hour},
+	{"90m30s", 90*time.Minute + 30*time.Second},
+	{"1m30s", 1*time.Minute + 30*time.Second},
 	{"2h45m", 2*time.Hour + 45*time.Minute},
+	{"2h45m10s", 2*time.Hour + 45*time.Minute + 10*time.Second},
 }
 
 func TestHuman2Duration(t *testing.T) {
